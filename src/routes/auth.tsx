@@ -53,12 +53,10 @@ function AuthPage() {
         });
         if (error) throw error;
         toast.success("Account created — you're in!");
-        navigate({ to: "/recruitment", replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
-        navigate({ to: "/recruitment", replace: true });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -76,7 +74,6 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/recruitment", replace: true });
   };
 
   return (
