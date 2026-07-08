@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedRecruitmentIndexRouteImport } from './routes/_authenticated/recruitment.index'
 import { Route as AuthenticatedRecruitmentJobIdRouteImport } from './routes/_authenticated/recruitment.$jobId'
 
@@ -35,6 +36,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRecruitmentIndexRoute =
   AuthenticatedRecruitmentIndexRouteImport.update({
     id: '/recruitment/',
@@ -51,6 +57,7 @@ const AuthenticatedRecruitmentJobIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
   '/recruitment/': typeof AuthenticatedRecruitmentIndexRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
   '/recruitment': typeof AuthenticatedRecruitmentIndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
   '/_authenticated/recruitment/': typeof AuthenticatedRecruitmentIndexRoute
@@ -76,16 +85,24 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/expenses'
     | '/settings'
     | '/recruitment/$jobId'
     | '/recruitment/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/settings' | '/recruitment/$jobId' | '/recruitment'
+  to:
+    | '/'
+    | '/auth'
+    | '/expenses'
+    | '/settings'
+    | '/recruitment/$jobId'
+    | '/recruitment'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/expenses'
     | '/_authenticated/settings'
     | '/_authenticated/recruitment/$jobId'
     | '/_authenticated/recruitment/'
@@ -127,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/expenses': {
+      id: '/_authenticated/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/recruitment/': {
       id: '/_authenticated/recruitment/'
       path: '/recruitment'
@@ -145,12 +169,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedRecruitmentJobIdRoute: typeof AuthenticatedRecruitmentJobIdRoute
   AuthenticatedRecruitmentIndexRoute: typeof AuthenticatedRecruitmentIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedRecruitmentJobIdRoute: AuthenticatedRecruitmentJobIdRoute,
   AuthenticatedRecruitmentIndexRoute: AuthenticatedRecruitmentIndexRoute,
