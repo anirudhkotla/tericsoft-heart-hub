@@ -13,10 +13,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedRecruitmentRouteImport } from './routes/_authenticated/recruitment'
-import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
-import { Route as AuthenticatedDashboardsRouteImport } from './routes/_authenticated/dashboards'
-import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -37,44 +33,15 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedRecruitmentRoute =
-  AuthenticatedRecruitmentRouteImport.update({
-    id: '/recruitment',
-    path: '/recruitment',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
-  id: '/expenses',
-  path: '/expenses',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDashboardsRoute = AuthenticatedDashboardsRouteImport.update({
-  id: '/dashboards',
-  path: '/dashboards',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/calendar': typeof AuthenticatedCalendarRoute
-  '/dashboards': typeof AuthenticatedDashboardsRoute
-  '/expenses': typeof AuthenticatedExpensesRoute
-  '/recruitment': typeof AuthenticatedRecruitmentRoute
   '/settings': typeof AuthenticatedSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/calendar': typeof AuthenticatedCalendarRoute
-  '/dashboards': typeof AuthenticatedDashboardsRoute
-  '/expenses': typeof AuthenticatedExpensesRoute
-  '/recruitment': typeof AuthenticatedRecruitmentRoute
   '/settings': typeof AuthenticatedSettingsRoute
 }
 export interface FileRoutesById {
@@ -82,40 +49,18 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
-  '/_authenticated/dashboards': typeof AuthenticatedDashboardsRoute
-  '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
-  '/_authenticated/recruitment': typeof AuthenticatedRecruitmentRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/auth'
-    | '/calendar'
-    | '/dashboards'
-    | '/expenses'
-    | '/recruitment'
-    | '/settings'
+  fullPaths: '/' | '/auth' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/auth'
-    | '/calendar'
-    | '/dashboards'
-    | '/expenses'
-    | '/recruitment'
-    | '/settings'
+  to: '/' | '/auth' | '/settings'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/calendar'
-    | '/_authenticated/dashboards'
-    | '/_authenticated/expenses'
-    | '/_authenticated/recruitment'
     | '/_authenticated/settings'
   fileRoutesById: FileRoutesById
 }
@@ -155,50 +100,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/recruitment': {
-      id: '/_authenticated/recruitment'
-      path: '/recruitment'
-      fullPath: '/recruitment'
-      preLoaderRoute: typeof AuthenticatedRecruitmentRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/expenses': {
-      id: '/_authenticated/expenses'
-      path: '/expenses'
-      fullPath: '/expenses'
-      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboards': {
-      id: '/_authenticated/dashboards'
-      path: '/dashboards'
-      fullPath: '/dashboards'
-      preLoaderRoute: typeof AuthenticatedDashboardsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/calendar': {
-      id: '/_authenticated/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof AuthenticatedCalendarRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
-  AuthenticatedDashboardsRoute: typeof AuthenticatedDashboardsRoute
-  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
-  AuthenticatedRecruitmentRoute: typeof AuthenticatedRecruitmentRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
-  AuthenticatedDashboardsRoute: AuthenticatedDashboardsRoute,
-  AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
-  AuthenticatedRecruitmentRoute: AuthenticatedRecruitmentRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
 
