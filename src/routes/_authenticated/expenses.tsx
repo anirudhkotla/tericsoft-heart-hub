@@ -163,6 +163,18 @@ function ExpensesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const updateCategory = useMutation({
+    mutationFn: async ({ id, category }: { id: string; category: string }) => {
+      const { error } = await supabase.from("expenses").update({ category }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Category updated");
+      qc.invalidateQueries({ queryKey: ["expenses"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("expenses").delete().eq("id", id);
@@ -283,7 +295,18 @@ function ExpensesPage() {
                     <p className="font-medium">{e.title}</p>
                     {e.vendor && <p className="text-xs text-muted-foreground">{e.vendor}</p>}
                   </TableCell>
-                  <TableCell><Badge variant="secondary" className="rounded-md">{labelOf(EXPENSE_CATEGORIES, e.category)}</Badge></TableCell>
+                  <TableCell>
+                    {e.submitted_by === user?.id || canApprove ? (
+                      <Select value={e.category} onValueChange={(v) => updateCategory.mutate({ id: e.id, category: v })}>
+                        <SelectTrigger className="h-8 w-[150px] rounded-lg"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {EXPENSE_CATEGORIES.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="secondary" className="rounded-md">{labelOf(EXPENSE_CATEGORIES, e.category)}</Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{format(new Date(e.spent_on), "dd MMM yyyy")}</TableCell>
                   <TableCell className="text-right font-medium">{formatMoney(Number(e.amount), e.currency)}</TableCell>
                   <TableCell><Badge className={`rounded-md ${statusTone[e.status]}`}>{labelOf(EXPENSE_STATUS, e.status)}</Badge></TableCell>
