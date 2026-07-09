@@ -81,6 +81,40 @@ function AuthPage() {
     if (result.redirected) return;
   };
 
+  const DEMO_EMAIL = "hr@tericsoft.com";
+  const DEMO_PASSWORD = "test@123";
+
+  const demoLogin = async () => {
+    setBusy(true);
+    try {
+      let { error } = await supabase.auth.signInWithPassword({
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+      });
+      if (error) {
+        // Account may not exist yet — create it, then sign in.
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: DEMO_EMAIL,
+          password: DEMO_PASSWORD,
+          options: { emailRedirectTo: window.location.origin, data: { full_name: "HR Demo" } },
+        });
+        if (signUpError) throw signUpError;
+        if (!data.session) {
+          ({ error } = await supabase.auth.signInWithPassword({
+            email: DEMO_EMAIL,
+            password: DEMO_PASSWORD,
+          }));
+          if (error) throw error;
+        }
+      }
+      toast.success("Signed in as HR");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Demo sign-in failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-accent/40 px-4">
       <div className="w-full max-w-md">
@@ -138,6 +172,14 @@ function AuthPage() {
           </div>
           <Button variant="outline" className="w-full rounded-xl active:scale-95" onClick={google}>
             Continue with Google
+          </Button>
+          <Button
+            variant="secondary"
+            className="mt-3 w-full rounded-xl active:scale-95"
+            onClick={demoLogin}
+            disabled={busy}
+          >
+            Quick sign in as HR (demo)
           </Button>
           <p className="mt-5 text-center text-sm text-muted-foreground">
             {mode === "signin" ? "Don't have an account?" : "Already have an account?"}{" "}
