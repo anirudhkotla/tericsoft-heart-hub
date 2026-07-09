@@ -18,6 +18,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRecruitmentIndexRouteImport } from './routes/_authenticated/recruitment.index'
 import { Route as AuthenticatedDashboardsIndexRouteImport } from './routes/_authenticated/dashboards.index'
 import { Route as AuthenticatedRecruitmentJobIdRouteImport } from './routes/_authenticated/recruitment.$jobId'
+import { Route as AuthenticatedDashboardsNewRouteImport } from './routes/_authenticated/dashboards.new'
 import { Route as AuthenticatedDashboardsDashboardIdRouteImport } from './routes/_authenticated/dashboards.$dashboardId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -67,6 +68,12 @@ const AuthenticatedRecruitmentJobIdRoute =
     path: '/recruitment/$jobId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDashboardsNewRoute =
+  AuthenticatedDashboardsNewRouteImport.update({
+    id: '/dashboards/new',
+    path: '/dashboards/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardsDashboardIdRoute =
   AuthenticatedDashboardsDashboardIdRouteImport.update({
     id: '/dashboards/$dashboardId',
@@ -81,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/expenses': typeof AuthenticatedExpensesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/dashboards/$dashboardId': typeof AuthenticatedDashboardsDashboardIdRoute
+  '/dashboards/new': typeof AuthenticatedDashboardsNewRoute
   '/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
   '/dashboards/': typeof AuthenticatedDashboardsIndexRoute
   '/recruitment/': typeof AuthenticatedRecruitmentIndexRoute
@@ -92,6 +100,7 @@ export interface FileRoutesByTo {
   '/expenses': typeof AuthenticatedExpensesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/dashboards/$dashboardId': typeof AuthenticatedDashboardsDashboardIdRoute
+  '/dashboards/new': typeof AuthenticatedDashboardsNewRoute
   '/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
   '/dashboards': typeof AuthenticatedDashboardsIndexRoute
   '/recruitment': typeof AuthenticatedRecruitmentIndexRoute
@@ -105,6 +114,7 @@ export interface FileRoutesById {
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/dashboards/$dashboardId': typeof AuthenticatedDashboardsDashboardIdRoute
+  '/_authenticated/dashboards/new': typeof AuthenticatedDashboardsNewRoute
   '/_authenticated/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
   '/_authenticated/dashboards/': typeof AuthenticatedDashboardsIndexRoute
   '/_authenticated/recruitment/': typeof AuthenticatedRecruitmentIndexRoute
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/settings'
     | '/dashboards/$dashboardId'
+    | '/dashboards/new'
     | '/recruitment/$jobId'
     | '/dashboards/'
     | '/recruitment/'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/settings'
     | '/dashboards/$dashboardId'
+    | '/dashboards/new'
     | '/recruitment/$jobId'
     | '/dashboards'
     | '/recruitment'
@@ -141,6 +153,7 @@ export interface FileRouteTypes {
     | '/_authenticated/expenses'
     | '/_authenticated/settings'
     | '/_authenticated/dashboards/$dashboardId'
+    | '/_authenticated/dashboards/new'
     | '/_authenticated/recruitment/$jobId'
     | '/_authenticated/dashboards/'
     | '/_authenticated/recruitment/'
@@ -217,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRecruitmentJobIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dashboards/new': {
+      id: '/_authenticated/dashboards/new'
+      path: '/dashboards/new'
+      fullPath: '/dashboards/new'
+      preLoaderRoute: typeof AuthenticatedDashboardsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboards/$dashboardId': {
       id: '/_authenticated/dashboards/$dashboardId'
       path: '/dashboards/$dashboardId'
@@ -232,6 +252,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedDashboardsDashboardIdRoute: typeof AuthenticatedDashboardsDashboardIdRoute
+  AuthenticatedDashboardsNewRoute: typeof AuthenticatedDashboardsNewRoute
   AuthenticatedRecruitmentJobIdRoute: typeof AuthenticatedRecruitmentJobIdRoute
   AuthenticatedDashboardsIndexRoute: typeof AuthenticatedDashboardsIndexRoute
   AuthenticatedRecruitmentIndexRoute: typeof AuthenticatedRecruitmentIndexRoute
@@ -243,6 +264,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedDashboardsDashboardIdRoute:
     AuthenticatedDashboardsDashboardIdRoute,
+  AuthenticatedDashboardsNewRoute: AuthenticatedDashboardsNewRoute,
   AuthenticatedRecruitmentJobIdRoute: AuthenticatedRecruitmentJobIdRoute,
   AuthenticatedDashboardsIndexRoute: AuthenticatedDashboardsIndexRoute,
   AuthenticatedRecruitmentIndexRoute: AuthenticatedRecruitmentIndexRoute,
