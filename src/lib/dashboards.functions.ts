@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import type { DashboardConfig, Widget } from "@/lib/dashboards";
 
 const fileSchema = z.object({
   name: z.string(),
@@ -53,7 +54,7 @@ ${SCHEMA_DOC}`;
 const ALLOWED_TYPES = new Set(["stat", "bar", "pie", "line"]);
 const ALLOWED_DATASETS = new Set(["expenses", "candidates", "job_requests", "calendar_events"]);
 
-function normalize(raw: unknown): { title: string; description: string; widgets: unknown[] } {
+function normalize(raw: unknown): DashboardConfig {
   const obj = (raw ?? {}) as Record<string, unknown>;
   const widgetsIn = Array.isArray(obj.widgets) ? obj.widgets : [];
   const widgets = widgetsIn
@@ -85,9 +86,9 @@ function normalize(raw: unknown): { title: string; description: string; widgets:
         if (base.metric === "sum") base.valueField = String(x.valueField ?? "amount");
         if (type !== "stat") base.groupBy = String(x.groupBy ?? "");
       }
-      return base;
+      return base as unknown as Widget;
     })
-    .filter(Boolean)
+    .filter((w): w is Widget => w !== null)
     .slice(0, 8);
   return {
     title: String(obj.title ?? "Custom dashboard"),
