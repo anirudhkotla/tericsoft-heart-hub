@@ -266,13 +266,45 @@ export function OfferLetterDialog({
           </p>
         </div>
 
-        <DialogFooter className="mt-4 gap-2 sm:justify-between">
+        <div className="mt-5 space-y-1.5">
+          <Label>Letterhead preview</Label>
+          <div className="overflow-hidden rounded-xl border bg-muted/30 shadow-soft">
+            <div
+              style={{
+                aspectRatio: "210 / 297",
+                backgroundImage: `url(${letterheadBg.url})`,
+                backgroundSize: "100% auto",
+                backgroundRepeat: "no-repeat",
+                backgroundColor: "#fff",
+              }}
+            >
+              <div
+                style={{
+                  padding: "11% 9.5% 10% 9.5%",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                }}
+                className="text-[7px] leading-relaxed text-neutral-800 sm:text-[9px]"
+              >
+                {content.trim() || "Generate or write the letter above to see it laid out on the company letterhead."}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4 flex-wrap gap-2 sm:justify-between">
           <Button variant="ghost" onClick={download} disabled={!content.trim()}>
-            <Download className="mr-1 h-4 w-4" /> Download
+            <Download className="mr-1 h-4 w-4" /> .txt
           </Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending} className="rounded-xl">
-            <Save className="mr-1 h-4 w-4" /> {save.isPending ? "Saving…" : "Save letter"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={printLetterhead} disabled={!content.trim()} className="rounded-xl">
+              <Printer className="mr-1 h-4 w-4" /> Print / Save as PDF
+            </Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending} className="rounded-xl">
+              <Save className="mr-1 h-4 w-4" /> {save.isPending ? "Saving…" : "Save letter"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
