@@ -255,7 +255,27 @@ function JobDetailPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           {PIPELINE_STAGES.map((stage) => (
-            <div key={stage.id} className="flex min-w-0 flex-col">
+            <div
+              key={stage.id}
+              className="flex min-w-0 flex-col"
+              onDragOver={(e) => {
+                if (dragId) {
+                  e.preventDefault();
+                  setDragOver(stage.id);
+                }
+              }}
+              onDragLeave={() => setDragOver((s) => (s === stage.id ? null : s))}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(null);
+                const id = dragId;
+                setDragId(null);
+                if (id) {
+                  const c = (candidates ?? []).find((x) => x.id === id);
+                  if (c && c.stage !== stage.id) moveStage.mutate({ id, stage: stage.id });
+                }
+              }}
+            >
               <div className="mb-2 flex items-center justify-between px-1">
                 <span className="flex items-center gap-2 text-sm font-medium">
                   <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-xs ${toneBg[stage.tone]}`}>
@@ -264,13 +284,22 @@ function JobDetailPage() {
                   {stage.label}
                 </span>
               </div>
-              <div className="flex min-h-24 flex-col gap-2 rounded-2xl bg-muted/40 p-2">
+              <div className={`flex min-h-24 flex-col gap-2 rounded-2xl p-2 transition-colors ${dragOver === stage.id ? "bg-primary/10 ring-2 ring-primary/40" : "bg-muted/40"}`}>
                 {grouped[stage.id]?.map((c) => {
                   const idx = stageIndex(c.stage);
                   return (
-                    <Card key={c.id} className="rounded-xl p-3 shadow-soft">
+                    <Card
+                      key={c.id}
+                      draggable
+                      onDragStart={() => setDragId(c.id)}
+                      onDragEnd={() => { setDragId(null); setDragOver(null); }}
+                      className={`cursor-grab rounded-xl p-3 shadow-soft active:cursor-grabbing ${dragId === c.id ? "opacity-50" : ""}`}
+                    >
                       <div className="flex items-start justify-between gap-1">
-                        <p className="text-sm font-medium leading-tight">{c.full_name}</p>
+                        <p className="flex items-center gap-1 text-sm font-medium leading-tight">
+                          <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+                          {c.full_name}
+                        </p>
                         <button onClick={() => remove.mutate(c.id)} className="text-muted-foreground hover:text-destructive" aria-label="Remove">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -302,6 +331,16 @@ function JobDetailPage() {
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
+                      {c.stage === "hired" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 w-full rounded-lg border-primary/30 text-primary hover:bg-primary/5"
+                          onClick={() => setOfferFor(c)}
+                        >
+                          <FileText className="mr-1 h-3.5 w-3.5" /> Offer letter
+                        </Button>
+                      )}
                     </Card>
                   );
                 })}
@@ -312,6 +351,15 @@ function JobDetailPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {offerFor && (
+        <OfferLetterDialog
+          candidate={offerFor}
+          job={job}
+          open={!!offerFor}
+          onOpenChange={(v) => !v && setOfferFor(null)}
+        />
       )}
     </div>
   );
