@@ -177,15 +177,15 @@ function ExpensesPage() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const patch: Record<string, unknown> = { status };
-      if (status === "pending") {
-        patch.reviewed_by = null;
-        patch.reviewed_at = null;
-      } else {
-        patch.reviewed_by = user!.id;
-        patch.reviewed_at = new Date().toISOString();
-      }
-      const { error } = await supabase.from("expenses").update(patch).eq("id", id);
+      const reviewed = status === "pending";
+      const { error } = await supabase
+        .from("expenses")
+        .update({
+          status,
+          reviewed_by: reviewed ? null : user!.id,
+          reviewed_at: reviewed ? null : new Date().toISOString(),
+        })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
