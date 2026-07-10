@@ -1,5 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import type { DashboardConfig, Widget } from "@/lib/dashboards";
 
@@ -97,47 +95,45 @@ function normalize(raw: unknown): DashboardConfig {
   };
 }
 
-export const generateDashboard = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => inputSchema.parse(data))
-  .handler(async ({ data }) => {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) throw new Error("Gemini API key is not configured.");
+export async function generateDashboard(data: { prompt: string; files?: { name: string; mimeType: string; base64: string }[] }) {
+  const parsed = inputSchema.parse(data);
+  const key = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!key) throw new Error("Gemini API key is not configured. Add VITE_GEMINI_API_KEY to your .env file.");
 
-    const parts: unknown[] = [{ text: accentPrompt(data.prompt) }];
-    for (const f of data.files ?? []) {
-      parts.push({ inlineData: { mimeType: f.mimeType || "text/plain", data: f.base64 } });
-    }
+  const parts: unknown[] = [{ text: accentPrompt(parsed.prompt) }];
+  for (const f of parsed.files ?? []) {
+    parts.push({ inlineData: { mimeType: f.mimeType || "text/plain", data: f.base64 } });
+  }
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
-        }),
-      },
-    );
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
+      }),
+    },
+  );
 
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(`Gemini error [${res.status}]: ${body}`);
-      throw new Error(`Dashboard generation failed (${res.status}). Please try again.`);
-    }
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`Gemini error [${res.status}]: ${body}`);
+    throw new Error(`Dashboard generation failed (${res.status}). Please try again.`);
+  }
 
-    const json = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    };
-    const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      const m = text.match(/\{[\s\S]*\}/);
-      if (!m) throw new Error("The AI returned an unexpected response. Please rephrase and try again.");
-      parsed = JSON.parse(m[0]);
-    }
-    return normalize(parsed);
-  });
+  const json = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(text);
+  } catch {
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error("The AI returned an unexpected response. Please rephrase and try again.");
+    parsedJson = JSON.parse(m[0]);
+  }
+  return normalize(parsedJson);
+}

@@ -1,6 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Paperclip, Send, Sparkles, Save, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +50,6 @@ function readFile(file: File): Promise<Attached> {
 function NewDashboard() {
   const router = useRouter();
   const { user } = useAuth();
-  const generate = useServerFn(generateDashboard);
   const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState<Attached[]>([]);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -79,7 +77,7 @@ function NewDashboard() {
     setBusy(true);
     setPrompt("");
     try {
-      const config = await generate({ data: { prompt: text, files } });
+      const config = await generateDashboard({ prompt: text, files });
       setMessages((m) => [...m, { role: "assistant", config }]);
       setFiles([]);
     } catch (e) {

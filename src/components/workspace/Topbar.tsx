@@ -27,8 +27,7 @@ export function Topbar() {
 
   const handleSignOut = async () => {
     await signOut();
-    toast.success("Signed out");
-    navigate({ to: "/auth", replace: true });
+    window.location.reload();
   };
 
   return (

@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { FileText, Sparkles, Download, Save, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { generateOfferLetter } from "@/lib/offers.functions";
 import type { Candidate, JobRequest } from "@/lib/hr";
-import letterheadBg from "@/assets/letterhead-bg.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +32,6 @@ export function OfferLetterDialog({
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const generate = useServerFn(generateOfferLetter);
 
   const [details, setDetails] = useState({
     annualCtc: "",
@@ -74,18 +71,16 @@ export function OfferLetterDialog({
 
   const draft = useMutation({
     mutationFn: async () =>
-      generate({
-        data: {
-          candidateName: candidate.full_name,
-          jobTitle: job.title,
-          department: job.department ?? "",
-          location: job.location ?? "",
-          employmentType: job.employment_type,
-          annualCtc: Number(details.annualCtc) || 0,
-          joiningDate: details.joiningDate,
-          reportingManager: details.reportingManager,
-          extraNotes: details.extraNotes,
-        },
+      generateOfferLetter({
+        candidateName: candidate.full_name,
+        jobTitle: job.title,
+        department: job.department ?? "",
+        location: job.location ?? "",
+        employmentType: job.employment_type,
+        annualCtc: Number(details.annualCtc) || 0,
+        joiningDate: details.joiningDate,
+        reportingManager: details.reportingManager,
+        extraNotes: details.extraNotes,
       }),
     onSuccess: (res) => {
       setContent(res.content);
@@ -134,6 +129,8 @@ export function OfferLetterDialog({
     URL.revokeObjectURL(url);
   };
 
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
   const printLetterhead = () => {
     if (!content.trim()) return;
     const w = window.open("", "_blank", "width=820,height=1040");
@@ -141,11 +138,6 @@ export function OfferLetterDialog({
       toast.error("Allow pop-ups to print the letter on the letterhead.");
       return;
     }
-    const esc = content
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-    const bg = new URL(letterheadBg.url, window.location.origin).href;
     w.document.write(`<!doctype html><html><head><meta charset="utf-8" />
 <title>Offer Letter — ${candidate.full_name}</title>
 <style>
@@ -157,7 +149,7 @@ export function OfferLetterDialog({
     width: 210mm;
     min-height: 297mm;
     margin: 0 auto;
-    background: #fff url('${bg}') no-repeat top center;
+    background: #fff url('/letterhead-bg.jpg') no-repeat top center;
     background-size: 100% auto;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -173,7 +165,7 @@ export function OfferLetterDialog({
   }
   @media print { body { background: #fff; } }
 </style></head>
-<body><div class="page"><div class="body">${esc}</div></div>
+<body><div class="page"><div class="body">${esc(content)}</div></div>
 <script>window.onload=function(){setTimeout(function(){window.focus();window.print();},350);};</script>
 </body></html>`);
     w.document.close();
@@ -181,7 +173,7 @@ export function OfferLetterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" /> Offer letter — {candidate.full_name}
@@ -248,46 +240,50 @@ export function OfferLetterDialog({
           ) : (
             <Sparkles className="mr-2 h-4 w-4 text-primary" />
           )}
-          {draft.isPending ? "Generating draft…" : content ? "Regenerate draft" : "Generate AI draft"}
+          {draft.isPending
+            ? "Generating draft…"
+            : content
+              ? "Regenerate draft"
+              : "Generate AI draft"}
         </Button>
 
-        <div className="mt-4 space-y-1.5">
-          <Label htmlFor="letter">Offer letter</Label>
-          <Textarea
-            id="letter"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={16}
-            placeholder="Generate a draft or write the offer letter here…"
-            className="rounded-xl font-mono text-sm leading-relaxed"
-          />
-          <p className="text-[11px] text-muted-foreground">
-            The company letterhead (logo, address, footer) is applied on the printed page — keep the body clear of headers.
-          </p>
-        </div>
-
-        <div className="mt-5 space-y-1.5">
-          <Label>Letterhead preview</Label>
-          <div className="overflow-hidden rounded-xl border bg-muted/30 shadow-soft">
-            <div
-              style={{
-                aspectRatio: "210 / 297",
-                backgroundImage: `url(${letterheadBg.url})`,
-                backgroundSize: "100% auto",
-                backgroundRepeat: "no-repeat",
-                backgroundColor: "#fff",
-              }}
-            >
+        <div className="mt-4 grid flex-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col space-y-1.5">
+            <Label htmlFor="letter">Offer letter</Label>
+            <Textarea
+              id="letter"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={16}
+              placeholder="Generate a draft or write the offer letter here…"
+              className="flex-1 rounded-xl font-mono text-sm leading-relaxed"
+            />
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <Label>Letterhead preview</Label>
+            <div className="flex-1 overflow-hidden rounded-xl border bg-muted/30 shadow-soft">
               <div
                 style={{
-                  padding: "11% 9.5% 10% 9.5%",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  width: "100%",
+                  aspectRatio: "210 / 297",
+                  backgroundImage: "url(/letterhead-bg.jpg)",
+                  backgroundSize: "100% auto",
+                  backgroundRepeat: "no-repeat",
+                  backgroundColor: "#fff",
                 }}
-                className="text-[7px] leading-relaxed text-neutral-800 sm:text-[9px]"
               >
-                {content.trim() || "Generate or write the letter above to see it laid out on the company letterhead."}
+                <div
+                  style={{
+                    padding: "11% 9.5% 10% 9.5%",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                  }}
+                  className="text-[7px] leading-relaxed text-neutral-800 sm:text-[9px]"
+                >
+                  {content.trim() ||
+                    "Generate or write the letter above to see it laid out on the company letterhead."}
+                </div>
               </div>
             </div>
           </div>
@@ -298,7 +294,12 @@ export function OfferLetterDialog({
             <Download className="mr-1 h-4 w-4" /> .txt
           </Button>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={printLetterhead} disabled={!content.trim()} className="rounded-xl">
+            <Button
+              variant="outline"
+              onClick={printLetterhead}
+              disabled={!content.trim()}
+              className="rounded-xl"
+            >
               <Printer className="mr-1 h-4 w-4" /> Print / Save as PDF
             </Button>
             <Button onClick={() => save.mutate()} disabled={save.isPending} className="rounded-xl">

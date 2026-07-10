@@ -1,8 +1,7 @@
-import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/workspace/AppSidebar";
 import { Topbar } from "@/components/workspace/Topbar";
-import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -10,18 +9,6 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const { session, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (!session) return <Navigate to="/auth" replace />;
-
   return (
     <SidebarProvider>
       <AppSidebar />

@@ -1,5 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 const inputSchema = z.object({
@@ -14,8 +12,6 @@ const inputSchema = z.object({
   extraNotes: z.string().max(2000).optional().default(""),
 });
 
-// Company policy salary split (mirrors the sample letter): 50% basic,
-// 40% HRA, remainder as special allowance — computed on annual CTC.
 function salaryBreakup(annualCtc: number) {
   const basic = Math.round(annualCtc * 0.5);
   const hra = Math.round(annualCtc * 0.4);
@@ -72,53 +68,51 @@ Human Resources
 ${COMPANY.name}`;
 }
 
-export const generateOfferLetter = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => inputSchema.parse(data))
-  .handler(async ({ data }) => {
-    const key = process.env.GEMINI_API_KEY;
-    const { basic, hra, allowance } = salaryBreakup(data.annualCtc);
-    if (!key) return { content: fallbackLetter(data) };
+export async function generateOfferLetter(data: z.infer<typeof inputSchema>) {
+  const parsed = inputSchema.parse(data);
+  const key = import.meta.env.VITE_GEMINI_API_KEY;
+  const { basic, hra, allowance } = salaryBreakup(parsed.annualCtc);
+  if (!key) return { content: fallbackLetter(parsed) };
 
-    const prompt = `You are the HR team at ${COMPANY.name} (CIN ${COMPANY.cin}, ${COMPANY.address}). Write a professional, warm offer letter body in plain text (no markdown, no letterhead, no company address block, no logo — those are pre-printed). Keep it concise and formal.
+  const prompt = `You are the HR team at ${COMPANY.name} (CIN ${COMPANY.cin}, ${COMPANY.address}). Write a professional, warm offer letter body in plain text (no markdown, no letterhead, no company address block, no logo — those are pre-printed). Keep it concise and formal.
 
-Candidate: ${data.candidateName}
-Position: ${data.jobTitle}
-Department: ${data.department || "N/A"}
-Location: ${data.location || "Hyderabad office"}
-Employment type: ${data.employmentType}
-Joining date: ${data.joiningDate || "to be confirmed"}
-Reporting manager: ${data.reportingManager || "N/A"}
-Annual CTC: ${data.annualCtc > 0 ? inr(data.annualCtc) : "to be discussed"}
+Candidate: ${parsed.candidateName}
+Position: ${parsed.jobTitle}
+Department: ${parsed.department || "N/A"}
+Location: ${parsed.location || "Hyderabad office"}
+Employment type: ${parsed.employmentType}
+Joining date: ${parsed.joiningDate || "to be confirmed"}
+Reporting manager: ${parsed.reportingManager || "N/A"}
+Annual CTC: ${parsed.annualCtc > 0 ? inr(parsed.annualCtc) : "to be discussed"}
 Salary breakup (company policy: 50% basic, 40% HRA, remainder special allowance): Basic ${inr(basic)}, HRA ${inr(hra)}, Special Allowance ${inr(allowance)}.
-Additional notes: ${data.extraNotes || "none"}
+Additional notes: ${parsed.extraNotes || "none"}
 
 Include: greeting, the offer of the role, compensation with the exact breakup above (only if CTC > 0), a line about background verification/documents, an acceptance line, and a warm closing signed by "Human Resources, ${COMPANY.name}". Start with a "Date:" line using today's date.`;
 
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.5 },
-          }),
-        },
-      );
-      if (!res.ok) {
-        console.error(`Gemini offer letter error [${res.status}]: ${await res.text()}`);
-        return { content: fallbackLetter(data) };
-      }
-      const json = (await res.json()) as {
-        candidates?: { content?: { parts?: { text?: string }[] } }[];
-      };
-      const text =
-        json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
-      return { content: text || fallbackLetter(data) };
-    } catch (e) {
-      console.error("Offer letter generation failed", e);
-      return { content: fallbackLetter(data) };
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.5 },
+        }),
+      },
+    );
+    if (!res.ok) {
+      console.error(`Gemini offer letter error [${res.status}]: ${await res.text()}`);
+      return { content: fallbackLetter(parsed) };
     }
-  });
+    const json = (await res.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const text =
+      json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
+    return { content: text || fallbackLetter(parsed) };
+  } catch (e) {
+    console.error("Offer letter generation failed", e);
+    return { content: fallbackLetter(parsed) };
+  }
+}
