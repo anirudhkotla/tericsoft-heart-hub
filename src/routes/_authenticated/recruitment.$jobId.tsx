@@ -9,9 +9,9 @@ import {
   ChevronRight,
   Mail,
   Phone,
-  Sparkles,
   Trash2,
   FileText,
+  GripVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ import {
   type StageId,
 } from "@/lib/hr";
 import { PageHeader } from "@/components/workspace/PageHeader";
+import { OfferLetterDialog } from "@/components/workspace/OfferLetterDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,14 +62,6 @@ export const Route = createFileRoute("/_authenticated/recruitment/$jobId")({
   ),
 });
 
-// Stubbed CV extraction — swap with a real document-understanding call later.
-function stubCvSummary(name: string): string {
-  const skills = ["React", "Node.js", "Python", "AWS", "SQL", "TypeScript", "Go", "Kubernetes"];
-  const picked = skills.sort(() => Math.random() - 0.5).slice(0, 4);
-  const years = 2 + Math.floor(Math.random() * 8);
-  return `${name} — ~${years} yrs experience. Key skills: ${picked.join(", ")}. Auto-extracted summary (mock). Replace with real CV parsing.`;
-}
-
 const toneBg: Record<string, string> = {
   brand: "bg-primary/10 text-primary",
   teal: "bg-teal/20 text-teal-foreground",
@@ -82,7 +75,10 @@ function JobDetailPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", source: "", notes: "", autoSummary: true });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", source: "", notes: "", cv_summary: "" });
+  const [offerFor, setOfferFor] = useState<Candidate | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
 
   const { data: job, isLoading: jobLoading } = useQuery({
     queryKey: ["job_requests", jobId],
@@ -132,7 +128,7 @@ function JobDetailPage() {
         phone: form.phone.trim() || null,
         source: form.source.trim() || null,
         notes: form.notes.trim() || null,
-        cv_summary: form.autoSummary ? stubCvSummary(form.full_name.trim()) : null,
+        cv_summary: form.cv_summary.trim() || null,
         created_by: user!.id,
       });
       if (error) throw error;
@@ -140,7 +136,7 @@ function JobDetailPage() {
     onSuccess: () => {
       toast.success("Candidate added");
       setOpen(false);
-      setForm({ full_name: "", email: "", phone: "", source: "", notes: "", autoSummary: true });
+      setForm({ full_name: "", email: "", phone: "", source: "", notes: "", cv_summary: "" });
       qc.invalidateQueries({ queryKey: ["candidates"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -151,7 +147,10 @@ function JobDetailPage() {
       const { error } = await supabase.from("candidates").update({ stage }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["candidates"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["candidates"] });
+      qc.invalidateQueries({ queryKey: ["candidates", jobId] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -234,11 +233,10 @@ function JobDetailPage() {
                     <Label htmlFor="cnotes">Notes</Label>
                     <Textarea id="cnotes" value={form.notes} maxLength={2000} rows={3} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="rounded-xl" />
                   </div>
-                  <label className="flex items-center gap-2 rounded-xl bg-muted/60 p-3 text-sm">
-                    <input type="checkbox" checked={form.autoSummary} onChange={(e) => setForm({ ...form, autoSummary: e.target.checked })} className="h-4 w-4 accent-[var(--primary)]" />
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Generate a mock CV summary (swap for real parsing later)
-                  </label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ccv">CV summary</Label>
+                    <Textarea id="ccv" value={form.cv_summary} maxLength={2000} rows={3} placeholder="Key experience, skills, notable projects…" onChange={(e) => setForm({ ...form, cv_summary: e.target.value })} className="rounded-xl" />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
@@ -257,7 +255,27 @@ function JobDetailPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           {PIPELINE_STAGES.map((stage) => (
-            <div key={stage.id} className="flex min-w-0 flex-col">
+            <div
+              key={stage.id}
+              className="flex min-w-0 flex-col"
+              onDragOver={(e) => {
+                if (dragId) {
+                  e.preventDefault();
+                  setDragOver(stage.id);
+                }
+              }}
+              onDragLeave={() => setDragOver((s) => (s === stage.id ? null : s))}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(null);
+                const id = dragId;
+                setDragId(null);
+                if (id) {
+                  const c = (candidates ?? []).find((x) => x.id === id);
+                  if (c && c.stage !== stage.id) moveStage.mutate({ id, stage: stage.id });
+                }
+              }}
+            >
               <div className="mb-2 flex items-center justify-between px-1">
                 <span className="flex items-center gap-2 text-sm font-medium">
                   <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-xs ${toneBg[stage.tone]}`}>
@@ -266,13 +284,22 @@ function JobDetailPage() {
                   {stage.label}
                 </span>
               </div>
-              <div className="flex min-h-24 flex-col gap-2 rounded-2xl bg-muted/40 p-2">
+              <div className={`flex min-h-24 flex-col gap-2 rounded-2xl p-2 transition-colors ${dragOver === stage.id ? "bg-primary/10 ring-2 ring-primary/40" : "bg-muted/40"}`}>
                 {grouped[stage.id]?.map((c) => {
                   const idx = stageIndex(c.stage);
                   return (
-                    <Card key={c.id} className="rounded-xl p-3 shadow-soft">
+                    <Card
+                      key={c.id}
+                      draggable
+                      onDragStart={() => setDragId(c.id)}
+                      onDragEnd={() => { setDragId(null); setDragOver(null); }}
+                      className={`cursor-grab rounded-xl p-3 shadow-soft active:cursor-grabbing ${dragId === c.id ? "opacity-50" : ""}`}
+                    >
                       <div className="flex items-start justify-between gap-1">
-                        <p className="text-sm font-medium leading-tight">{c.full_name}</p>
+                        <p className="flex items-center gap-1 text-sm font-medium leading-tight">
+                          <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+                          {c.full_name}
+                        </p>
                         <button onClick={() => remove.mutate(c.id)} className="text-muted-foreground hover:text-destructive" aria-label="Remove">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -304,6 +331,16 @@ function JobDetailPage() {
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
+                      {c.stage === "hired" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 w-full rounded-lg border-primary/30 text-primary hover:bg-primary/5"
+                          onClick={() => setOfferFor(c)}
+                        >
+                          <FileText className="mr-1 h-3.5 w-3.5" /> Offer letter
+                        </Button>
+                      )}
                     </Card>
                   );
                 })}
@@ -314,6 +351,15 @@ function JobDetailPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {offerFor && (
+        <OfferLetterDialog
+          candidate={offerFor}
+          job={job}
+          open={!!offerFor}
+          onOpenChange={(v) => !v && setOfferFor(null)}
+        />
       )}
     </div>
   );

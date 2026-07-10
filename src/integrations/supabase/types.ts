@@ -238,6 +238,54 @@ export type Database = {
         }
         Relationships: []
       }
+      offer_letters: {
+        Row: {
+          candidate_id: string
+          content: string
+          created_at: string
+          created_by: string
+          details: Json
+          id: string
+          job_request_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          content?: string
+          created_at?: string
+          created_by: string
+          details?: Json
+          id?: string
+          job_request_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          details?: Json
+          id?: string
+          job_request_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_letters_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_letters_job_request_id_fkey"
+            columns: ["job_request_id"]
+            isOneToOne: false
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

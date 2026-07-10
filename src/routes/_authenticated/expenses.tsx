@@ -175,6 +175,26 @@ function ExpensesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const reviewed = status === "pending";
+      const { error } = await supabase
+        .from("expenses")
+        .update({
+          status,
+          reviewed_by: reviewed ? null : user!.id,
+          reviewed_at: reviewed ? null : new Date().toISOString(),
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Status updated");
+      qc.invalidateQueries({ queryKey: ["expenses"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("expenses").delete().eq("id", id);
@@ -309,7 +329,18 @@ function ExpensesPage() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{format(new Date(e.spent_on), "dd MMM yyyy")}</TableCell>
                   <TableCell className="text-right font-medium">{formatMoney(Number(e.amount), e.currency)}</TableCell>
-                  <TableCell><Badge className={`rounded-md ${statusTone[e.status]}`}>{labelOf(EXPENSE_STATUS, e.status)}</Badge></TableCell>
+                  <TableCell>
+                    {canApprove ? (
+                      <Select value={e.status} onValueChange={(v) => updateStatus.mutate({ id: e.id, status: v })}>
+                        <SelectTrigger className={`h-8 w-[130px] rounded-lg ${statusTone[e.status]}`}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {EXPENSE_STATUS.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge className={`rounded-md ${statusTone[e.status]}`}>{labelOf(EXPENSE_STATUS, e.status)}</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
                       {canApprove && e.status !== "approved" && (
