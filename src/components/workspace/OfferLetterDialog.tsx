@@ -134,6 +134,51 @@ export function OfferLetterDialog({
     URL.revokeObjectURL(url);
   };
 
+  const printLetterhead = () => {
+    if (!content.trim()) return;
+    const w = window.open("", "_blank", "width=820,height=1040");
+    if (!w) {
+      toast.error("Allow pop-ups to print the letter on the letterhead.");
+      return;
+    }
+    const esc = content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const bg = new URL(letterheadBg.url, window.location.origin).href;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8" />
+<title>Offer Letter — ${candidate.full_name}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f1f1f1; }
+  .page {
+    position: relative;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: #fff url('${bg}') no-repeat top center;
+    background-size: 100% auto;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .body {
+    padding: 33mm 20mm 30mm 20mm;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11.5pt;
+    line-height: 1.65;
+    color: #1a1a1a;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  @media print { body { background: #fff; } }
+</style></head>
+<body><div class="page"><div class="body">${esc}</div></div>
+<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},350);};</script>
+</body></html>`);
+    w.document.close();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto sm:max-w-2xl">
