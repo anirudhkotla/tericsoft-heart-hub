@@ -233,11 +233,10 @@ function JobDetailPage() {
                     <Label htmlFor="cnotes">Notes</Label>
                     <Textarea id="cnotes" value={form.notes} maxLength={2000} rows={3} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="rounded-xl" />
                   </div>
-                  <label className="flex items-center gap-2 rounded-xl bg-muted/60 p-3 text-sm">
-                    <input type="checkbox" checked={form.autoSummary} onChange={(e) => setForm({ ...form, autoSummary: e.target.checked })} className="h-4 w-4 accent-[var(--primary)]" />
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Generate a mock CV summary (swap for real parsing later)
-                  </label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ccv">CV summary</Label>
+                    <Textarea id="ccv" value={form.cv_summary} maxLength={2000} rows={3} placeholder="Key experience, skills, notable projects…" onChange={(e) => setForm({ ...form, cv_summary: e.target.value })} className="rounded-xl" />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
