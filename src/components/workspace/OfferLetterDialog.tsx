@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { FileText, Sparkles, Download, Save, Loader2 } from "lucide-react";
+import { FileText, Sparkles, Download, Save, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { generateOfferLetter } from "@/lib/offers.functions";
 import type { Candidate, JobRequest } from "@/lib/hr";
+import letterheadBg from "@/assets/letterhead-bg.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
