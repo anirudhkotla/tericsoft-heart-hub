@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { FileText, Sparkles, Download, Save, Loader2 } from "lucide-react";
+import { FileText, Sparkles, Download, Save, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { generateOfferLetter } from "@/lib/offers.functions";
 import type { Candidate, JobRequest } from "@/lib/hr";
+import letterheadBg from "@/assets/letterhead-bg.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -133,6 +134,51 @@ export function OfferLetterDialog({
     URL.revokeObjectURL(url);
   };
 
+  const printLetterhead = () => {
+    if (!content.trim()) return;
+    const w = window.open("", "_blank", "width=820,height=1040");
+    if (!w) {
+      toast.error("Allow pop-ups to print the letter on the letterhead.");
+      return;
+    }
+    const esc = content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const bg = new URL(letterheadBg.url, window.location.origin).href;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8" />
+<title>Offer Letter — ${candidate.full_name}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f1f1f1; }
+  .page {
+    position: relative;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: #fff url('${bg}') no-repeat top center;
+    background-size: 100% auto;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .body {
+    padding: 33mm 20mm 30mm 20mm;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11.5pt;
+    line-height: 1.65;
+    color: #1a1a1a;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  @media print { body { background: #fff; } }
+</style></head>
+<body><div class="page"><div class="body">${esc}</div></div>
+<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},350);};</script>
+</body></html>`);
+    w.document.close();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto sm:max-w-2xl">
@@ -220,13 +266,45 @@ export function OfferLetterDialog({
           </p>
         </div>
 
-        <DialogFooter className="mt-4 gap-2 sm:justify-between">
+        <div className="mt-5 space-y-1.5">
+          <Label>Letterhead preview</Label>
+          <div className="overflow-hidden rounded-xl border bg-muted/30 shadow-soft">
+            <div
+              style={{
+                aspectRatio: "210 / 297",
+                backgroundImage: `url(${letterheadBg.url})`,
+                backgroundSize: "100% auto",
+                backgroundRepeat: "no-repeat",
+                backgroundColor: "#fff",
+              }}
+            >
+              <div
+                style={{
+                  padding: "11% 9.5% 10% 9.5%",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                }}
+                className="text-[7px] leading-relaxed text-neutral-800 sm:text-[9px]"
+              >
+                {content.trim() || "Generate or write the letter above to see it laid out on the company letterhead."}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4 flex-wrap gap-2 sm:justify-between">
           <Button variant="ghost" onClick={download} disabled={!content.trim()}>
-            <Download className="mr-1 h-4 w-4" /> Download
+            <Download className="mr-1 h-4 w-4" /> .txt
           </Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending} className="rounded-xl">
-            <Save className="mr-1 h-4 w-4" /> {save.isPending ? "Saving…" : "Save letter"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={printLetterhead} disabled={!content.trim()} className="rounded-xl">
+              <Printer className="mr-1 h-4 w-4" /> Print / Save as PDF
+            </Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending} className="rounded-xl">
+              <Save className="mr-1 h-4 w-4" /> {save.isPending ? "Saving…" : "Save letter"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
