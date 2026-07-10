@@ -9,9 +9,9 @@ import {
   ChevronRight,
   Mail,
   Phone,
-  Sparkles,
   Trash2,
   FileText,
+  GripVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ import {
   type StageId,
 } from "@/lib/hr";
 import { PageHeader } from "@/components/workspace/PageHeader";
+import { OfferLetterDialog } from "@/components/workspace/OfferLetterDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,14 +62,6 @@ export const Route = createFileRoute("/_authenticated/recruitment/$jobId")({
   ),
 });
 
-// Stubbed CV extraction — swap with a real document-understanding call later.
-function stubCvSummary(name: string): string {
-  const skills = ["React", "Node.js", "Python", "AWS", "SQL", "TypeScript", "Go", "Kubernetes"];
-  const picked = skills.sort(() => Math.random() - 0.5).slice(0, 4);
-  const years = 2 + Math.floor(Math.random() * 8);
-  return `${name} — ~${years} yrs experience. Key skills: ${picked.join(", ")}. Auto-extracted summary (mock). Replace with real CV parsing.`;
-}
-
 const toneBg: Record<string, string> = {
   brand: "bg-primary/10 text-primary",
   teal: "bg-teal/20 text-teal-foreground",
@@ -82,7 +75,10 @@ function JobDetailPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", source: "", notes: "", autoSummary: true });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", source: "", notes: "", cv_summary: "" });
+  const [offerFor, setOfferFor] = useState<Candidate | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
 
   const { data: job, isLoading: jobLoading } = useQuery({
     queryKey: ["job_requests", jobId],
@@ -132,7 +128,7 @@ function JobDetailPage() {
         phone: form.phone.trim() || null,
         source: form.source.trim() || null,
         notes: form.notes.trim() || null,
-        cv_summary: form.autoSummary ? stubCvSummary(form.full_name.trim()) : null,
+        cv_summary: form.cv_summary.trim() || null,
         created_by: user!.id,
       });
       if (error) throw error;
@@ -140,7 +136,7 @@ function JobDetailPage() {
     onSuccess: () => {
       toast.success("Candidate added");
       setOpen(false);
-      setForm({ full_name: "", email: "", phone: "", source: "", notes: "", autoSummary: true });
+      setForm({ full_name: "", email: "", phone: "", source: "", notes: "", cv_summary: "" });
       qc.invalidateQueries({ queryKey: ["candidates"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -151,7 +147,10 @@ function JobDetailPage() {
       const { error } = await supabase.from("candidates").update({ stage }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["candidates"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["candidates"] });
+      qc.invalidateQueries({ queryKey: ["candidates", jobId] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
