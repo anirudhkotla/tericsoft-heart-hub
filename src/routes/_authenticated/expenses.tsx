@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Receipt, Plus, ScanLine, Check, X, Clock, IndianRupee, Trash2 } from "lucide-react";
+import { Receipt, Plus, Upload, Check, X, Clock, IndianRupee, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,8 @@ import {
   labelOf,
   type Expense,
 } from "@/lib/hr";
+import { scanReceipt } from "@/lib/expenses.functions";
+import { CURRENCIES, fetchExchangeRate } from "@/lib/currency";
 import { PageHeader } from "@/components/workspace/PageHeader";
 import { StatCard } from "@/components/workspace/StatCard";
 import { Button } from "@/components/ui/button";
@@ -67,6 +69,7 @@ const emptyForm = {
   title: "",
   category: "other",
   amount: "",
+  currency: "INR",
   vendor: "",
   spent_on: format(new Date(), "yyyy-MM-dd"),
   notes: "",
@@ -80,6 +83,11 @@ function ExpensesPage() {
   const [scanning, setScanning] = useState(false);
   const [filter, setFilter] = useState<string>("all");
   const canApprove = hasRole("admin", "hr", "team_lead");
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [scanFileName, setScanFileName] = useState<string | null>(null);
+  const [converting, setConverting] = useState(false);
+  const [amountInr, setAmountInr] = useState<number | null>(null);
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
 
   const { data: expenses, isLoading } = useQuery({
     queryKey: ["expenses"],
@@ -92,12 +100,13 @@ function ExpensesPage() {
 
   const totals = useMemo(() => {
     const list = expenses ?? [];
-    const sum = (s: string) => list.filter((e) => e.status === s).reduce((a, e) => a + Number(e.amount), 0);
+    const inr = (e: Expense) => e.amount_inr ?? Number(e.amount);
+    const sumInr = (s: string) => list.filter((e) => e.status === s).reduce((a, e) => a + inr(e), 0);
     return {
-      pending: sum("pending"),
-      approved: sum("approved"),
+      pending: sumInr("pending"),
+      approved: sumInr("approved"),
       count: list.length,
-      all: list.reduce((a, e) => a + Number(e.amount), 0),
+      all: list.reduce((a, e) => a + inr(e), 0),
     };
   }, [expenses]);
 
@@ -106,35 +115,77 @@ function ExpensesPage() {
     [expenses, filter],
   );
 
-  const scanReceipt = () => {
+  const handleFilePick = async (list: FileList | null) => {
+    if (!list || !list[0]) return;
+    const file = list[0];
+    setScanFileName(file.name);
     setScanning(true);
-    // Mock OCR — replace with a real document-extraction call.
-    setTimeout(() => {
-      const vendors = ["Uber", "Amazon", "Zoho", "Taj Hotels", "IndiGo", "Croma"];
-      const cats = ["travel", "software", "hardware", "meals", "office"];
-      const v = vendors[Math.floor(Math.random() * vendors.length)];
-      const c = cats[Math.floor(Math.random() * cats.length)];
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result);
+          resolve(result.split(",")[1] ?? "");
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const result = await scanReceipt({
+        name: file.name,
+        mimeType: file.type || "image/jpeg",
+        base64,
+      });
       setForm((f) => ({
         ...f,
-        vendor: v,
-        title: `${v} purchase`,
-        category: c,
-        amount: String(500 + Math.floor(Math.random() * 9500)),
+        vendor: result.vendor ?? f.vendor,
+        title: result.title ?? f.title,
+        category: result.category ?? f.category,
+        amount: result.amount ? String(result.amount) : f.amount,
+        spent_on: result.date ?? f.spent_on,
       }));
+      toast.success("Receipt scanned", { description: "Fields pre-filled — review before saving." });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to scan receipt");
+    } finally {
       setScanning(false);
-      toast.success("Receipt scanned (mock)", { description: "Fields pre-filled — review before saving." });
-    }, 1100);
+    }
   };
+
+  useEffect(() => {
+    const amount = Number(form.amount);
+    if (!amount || amount <= 0 || form.currency === "INR") {
+      setAmountInr(null);
+      setExchangeRate(null);
+      return;
+    }
+    let cancelled = false;
+    setConverting(true);
+    fetchExchangeRate(form.currency, "INR")
+      .then((rate) => {
+        if (cancelled) return;
+        setExchangeRate(rate);
+        setAmountInr(Math.round(amount * rate * 100) / 100);
+        setConverting(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setConverting(false);
+      });
+    return () => { cancelled = true; };
+  }, [form.amount, form.currency]);
 
   const create = useMutation({
     mutationFn: async () => {
       if (!form.title.trim()) throw new Error("Add a title.");
       const amount = Number(form.amount);
       if (!amount || amount <= 0) throw new Error("Enter a valid amount.");
+      const computedInr = form.currency === "INR" ? amount : amountInr ?? null;
       const { error } = await supabase.from("expenses").insert({
         title: form.title.trim(),
         category: form.category,
         amount,
+        currency: form.currency,
+        amount_inr: computedInr,
         vendor: form.vendor.trim() || null,
         spent_on: form.spent_on,
         notes: form.notes.trim() || null,
@@ -212,20 +263,40 @@ function ExpensesPage() {
       <PageHeader
         eyebrow="AI Expense Tracker"
         title="Expenses"
-        description="Submit claims, capture receipts, and approve spend against the company budget."
+        description="Submit claims in any currency, capture receipts with AI, and approve spend against the company budget."
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setScanFileName(null); }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-soft"><Plus className="mr-1 h-4 w-4" /> Add Expense</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>New expense</DialogTitle>
-                <DialogDescription>Snap a receipt to auto-fill, or enter details manually.</DialogDescription>
+                <DialogDescription>Upload a receipt to auto-fill with AI, or enter details manually.</DialogDescription>
               </DialogHeader>
-              <Button variant="outline" onClick={scanReceipt} disabled={scanning} className="w-full rounded-xl border-dashed">
-                <ScanLine className={`mr-2 h-4 w-4 ${scanning ? "animate-pulse" : ""}`} />
-                {scanning ? "Scanning receipt…" : "Scan receipt (mock OCR)"}
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
+                onChange={(e) => handleFilePick(e.target.files)}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInput.current?.click()}
+                disabled={scanning}
+                className="w-full rounded-xl border-dashed"
+              >
+                {scanning ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                {scanning
+                  ? "Analyzing receipt with AI…"
+                  : scanFileName
+                    ? scanFileName
+                    : "Upload receipt to scan"}
               </Button>
               <div className="space-y-4">
                 <div className="space-y-1.5">
@@ -243,8 +314,27 @@ function ExpensesPage() {
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="eamount">Amount (₹)</Label>
-                    <Input id="eamount" type="number" min={0} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="rounded-xl" />
+                    <Label htmlFor="eamount">Amount</Label>
+                    <div className="flex gap-2">
+                      <Input id="eamount" type="number" min={0} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="rounded-xl flex-1" />
+                      <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
+                        <SelectTrigger className="w-[110px] rounded-xl shrink-0"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CURRENCIES.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {form.currency !== "INR" && Number(form.amount) > 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {converting ? (
+                          <span className="inline-flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Converting…</span>
+                        ) : amountInr != null && exchangeRate ? (
+                          <>≈ {formatMoney(amountInr, "INR")} @ 1 {form.currency} = {formatMoney(exchangeRate, "INR")}</>
+                        ) : (
+                          <span className="text-destructive">Conversion unavailable</span>
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -328,7 +418,12 @@ function ExpensesPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{format(new Date(e.spent_on), "dd MMM yyyy")}</TableCell>
-                  <TableCell className="text-right font-medium">{formatMoney(Number(e.amount), e.currency)}</TableCell>
+                  <TableCell className="text-right">
+                    <p className="font-medium">{formatMoney(Number(e.amount), e.currency)}</p>
+                    {e.amount_inr != null && e.currency !== "INR" && (
+                      <p className="text-xs text-muted-foreground">{formatMoney(e.amount_inr, "INR")}</p>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {canApprove ? (
                       <Select value={e.status} onValueChange={(v) => updateStatus.mutate({ id: e.id, status: v })}>

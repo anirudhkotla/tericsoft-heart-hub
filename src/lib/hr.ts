@@ -63,7 +63,8 @@ export function labelOf<T extends { id: string; label: string }>(
 
 export function formatMoney(amount: number, currency = "INR") {
   try {
-    return new Intl.NumberFormat("en-IN", {
+    const locale = currency === "INR" ? "en-IN" : "en-US";
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       maximumFractionDigits: 0,
