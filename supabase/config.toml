@@ -7,3 +7,10 @@ project_id = "azetrpxfpanteqgftsho"
 # off or every OAuth connect would 401 before reaching our code.
 [functions.oauth-connect]
 verify_jwt = false
+
+# dev-session establishes the browser's very first session — by definition
+# there's no JWT to send yet, so the platform-level gate must be off. The
+# real dev-account password never leaves this function (it's a secret, not a
+# client env var), so there's nothing for a caller to forge their way into.
+[functions.dev-session]
+verify_jwt = false

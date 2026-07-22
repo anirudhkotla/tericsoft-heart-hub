@@ -35,36 +35,29 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 // No login/signup UI in this app — every browser is signed in as one shared
 // dev account automatically, so auth.uid() stays real (RLS on
 // datasource_secrets/agent_sessions/etc. keeps working) without ever showing
-// a login form. Credentials come only from env — never hardcode a real
-// password as a source-controlled fallback.
-const DEV_EMAIL = import.meta.env.VITE_DEV_EMAIL;
-const DEV_PASSWORD = import.meta.env.VITE_DEV_PASSWORD;
-
+// a login form. The dev account's password NEVER lives in client code —
+// Vite bakes every VITE_-prefixed var straight into the public bundle, so a
+// client-side credential here would leak to anyone opening devtools on the
+// deployed site. The `dev-session` edge function does the actual sign-in
+// server-side (password is a Supabase function secret) and hands back only
+// a session token pair.
 let devSessionPromise: Promise<Session | null> | null = null;
 
-async function signInOrSignUpDevAccount(): Promise<Session | null> {
-  if (!DEV_EMAIL || !DEV_PASSWORD) {
-    throw new Error(
-      "Missing VITE_DEV_EMAIL / VITE_DEV_PASSWORD environment variable(s) for the shared dev account.",
-    );
-  }
-  const signIn = await supabase.auth.signInWithPassword({ email: DEV_EMAIL, password: DEV_PASSWORD });
-  if (signIn.data.session) return signIn.data.session;
-
-  const signUp = await supabase.auth.signUp({ email: DEV_EMAIL, password: DEV_PASSWORD });
-  if (signUp.data.session) return signUp.data.session;
-
-  // Project may require email confirmation on first signup — try signing in
-  // once more in case it doesn't, otherwise give up until confirmed.
-  const retry = await supabase.auth.signInWithPassword({ email: DEV_EMAIL, password: DEV_PASSWORD });
-  return retry.data.session ?? null;
+async function fetchDevSession(): Promise<Session | null> {
+  const { data, error } = await supabase.functions.invoke("dev-session");
+  if (error || !data?.access_token || !data?.refresh_token) return null;
+  const { data: setData } = await supabase.auth.setSession({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+  });
+  return setData.session;
 }
 
 export function ensureDevSession(): Promise<Session | null> {
   if (!devSessionPromise) {
     devSessionPromise = supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) return data.session;
-      return signInOrSignUpDevAccount();
+      return fetchDevSession();
     });
   }
   return devSessionPromise;
