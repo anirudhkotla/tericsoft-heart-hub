@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { computeSeries, computeStat, type DashboardConfig, type Widget } from "@/lib/dashboards";
+import { callGemini, geminiText } from "@/lib/gemini-proxy";
 
 const fileSchema = z.object({
   name: z.string(),
@@ -119,36 +120,24 @@ export async function generateDashboard(data: {
   externalTables?: Record<string, Record<string, unknown>[]>;
 }) {
   const parsed = inputSchema.parse(data);
-  const key = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!key) throw new Error("Gemini API key is not configured. Add VITE_GEMINI_API_KEY to your .env file.");
 
   const parts: unknown[] = [{ text: accentPrompt(parsed.prompt, parsed.datasourceContext) }];
   for (const f of parsed.files ?? []) {
     parts.push({ inlineData: { mimeType: f.mimeType || "text/plain", data: f.base64 } });
   }
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
-      }),
-    },
-  );
-
-  if (!res.ok) {
-    const body = await res.text();
-    console.error(`Gemini error [${res.status}]: ${body}`);
-    throw new Error(`Dashboard generation failed (${res.status}). Please try again.`);
+  let text: string;
+  try {
+    const response = await callGemini({
+      contents: [{ role: "user", parts }],
+      generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
+    });
+    text = geminiText(response);
+  } catch (e) {
+    console.error("Gemini error:", e);
+    throw new Error("Dashboard generation failed. Please try again.");
   }
 
-  const json = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
   let parsedJson: unknown;
   try {
     parsedJson = JSON.parse(text);

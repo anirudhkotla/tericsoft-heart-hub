@@ -1,3 +1,5 @@
+import { callGemini, geminiText } from "@/lib/gemini-proxy";
+
 export interface ScanResult {
   vendor: string | null;
   amount: number | null;
@@ -11,12 +13,6 @@ export async function scanReceipt(file: {
   mimeType: string;
   base64: string;
 }): Promise<ScanResult> {
-  const key = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!key)
-    throw new Error(
-      "Gemini API key is not configured. Add VITE_GEMINI_API_KEY to your .env file.",
-    );
-
   const prompt = `You are an expense receipt analyzer. Extract the following fields from this receipt image:
 - vendor (the merchant or business name)
 - amount (the total amount paid, as a plain number, no currency symbol, no commas)
@@ -29,38 +25,25 @@ Return ONLY valid JSON with these fields, no markdown, no prose, no explanation.
 
 If you cannot determine a field, use null for that field. Do not make up values.`;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType: file.mimeType, data: file.base64 } },
-            ],
-          },
-        ],
-        generationConfig: { temperature: 0.2 },
-      }),
-    },
-  );
-
-  if (!res.ok) {
-    const body = await res.text();
-    console.error(`Gemini receipt scan error [${res.status}]: ${body}`);
-    throw new Error(`Receipt scan failed (${res.status}). Please try again.`);
+  let text: string;
+  try {
+    const response = await callGemini({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: file.mimeType, data: file.base64 } },
+          ],
+        },
+      ],
+      generationConfig: { temperature: 0.2 },
+    });
+    text = geminiText(response);
+  } catch (e) {
+    console.error("Gemini receipt scan error:", e);
+    throw new Error("Receipt scan failed. Please try again.");
   }
-
-  const json = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  const text =
-    json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
-    "";
 
   let result: ScanResult;
   try {

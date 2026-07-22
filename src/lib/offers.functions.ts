@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { callGemini, geminiText } from "@/lib/gemini-proxy";
 
 const inputSchema = z.object({
   candidateName: z.string().min(1).max(160),
@@ -118,9 +119,7 @@ ${d.candidateName}`;
 
 export async function generateOfferLetter(data: z.infer<typeof inputSchema>) {
   const parsed = inputSchema.parse(data);
-  const key = import.meta.env.VITE_GEMINI_API_KEY;
   const { basic, hra, allowance } = salaryBreakup(parsed.annualCtc);
-  if (!key) return { content: fallbackLetter(parsed) };
 
   const isIntern = parsed.employmentType.toLowerCase().includes("intern");
   const stipend = Math.round(parsed.annualCtc / 12);
@@ -198,26 +197,11 @@ ${isIntern && parsed.annualCtc > 0 ? `Monthly stipend: ${inr(stipend).replace("â
 Additional notes: ${parsed.extraNotes || "none"}`;
 
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.5 },
-        }),
-      },
-    );
-    if (!res.ok) {
-      console.error(`Gemini offer letter error [${res.status}]: ${await res.text()}`);
-      return { content: fallbackLetter(parsed) };
-    }
-    const json = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    };
-    const text =
-      json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
+    const response = await callGemini({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.5 },
+    });
+    const text = geminiText(response).trim();
     return { content: text || fallbackLetter(parsed) };
   } catch (e) {
     console.error("Offer letter generation failed", e);
