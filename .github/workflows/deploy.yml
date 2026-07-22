@@ -28,6 +28,10 @@ jobs:
         run: npm run build
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_DEV_EMAIL: ${{ secrets.VITE_DEV_EMAIL }}
+          VITE_DEV_PASSWORD: ${{ secrets.VITE_DEV_PASSWORD }}
 
       - name: Prepare static output
         run: |
@@ -35,6 +39,8 @@ jobs:
           cp dist/client/_shell.html dist/client/404.html
 
       - uses: actions/configure-pages@v4
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:

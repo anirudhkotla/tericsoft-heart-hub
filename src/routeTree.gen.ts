@@ -9,23 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
+import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedRecruitmentIndexRouteImport } from './routes/_authenticated/recruitment.index'
+import { Route as AuthenticatedDatasourcesIndexRouteImport } from './routes/_authenticated/datasources.index'
 import { Route as AuthenticatedDashboardsIndexRouteImport } from './routes/_authenticated/dashboards.index'
+import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedRecruitmentJobIdRouteImport } from './routes/_authenticated/recruitment.$jobId'
+import { Route as AuthenticatedDatasourcesOauthCallbackRouteImport } from './routes/_authenticated/datasources.oauth-callback'
+import { Route as AuthenticatedDatasourcesNewRouteImport } from './routes/_authenticated/datasources.new'
+import { Route as AuthenticatedDatasourcesDatasourceIdRouteImport } from './routes/_authenticated/datasources.$datasourceId'
 import { Route as AuthenticatedDashboardsNewRouteImport } from './routes/_authenticated/dashboards.new'
 import { Route as AuthenticatedDashboardsDashboardIdRouteImport } from './routes/_authenticated/dashboards.$dashboardId'
+import { Route as AuthenticatedChatSessionIdRouteImport } from './routes/_authenticated/chat.$sessionId'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -45,6 +46,11 @@ const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
   path: '/expenses',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
@@ -56,16 +62,45 @@ const AuthenticatedRecruitmentIndexRoute =
     path: '/recruitment/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDatasourcesIndexRoute =
+  AuthenticatedDatasourcesIndexRouteImport.update({
+    id: '/datasources/',
+    path: '/datasources/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardsIndexRoute =
   AuthenticatedDashboardsIndexRouteImport.update({
     id: '/dashboards/',
     path: '/dashboards/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedChatIndexRoute = AuthenticatedChatIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedChatRoute,
+} as any)
 const AuthenticatedRecruitmentJobIdRoute =
   AuthenticatedRecruitmentJobIdRouteImport.update({
     id: '/recruitment/$jobId',
     path: '/recruitment/$jobId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDatasourcesOauthCallbackRoute =
+  AuthenticatedDatasourcesOauthCallbackRouteImport.update({
+    id: '/datasources/oauth-callback',
+    path: '/datasources/oauth-callback',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDatasourcesNewRoute =
+  AuthenticatedDatasourcesNewRouteImport.update({
+    id: '/datasources/new',
+    path: '/datasources/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDatasourcesDatasourceIdRoute =
+  AuthenticatedDatasourcesDatasourceIdRouteImport.update({
+    id: '/datasources/$datasourceId',
+    path: '/datasources/$datasourceId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDashboardsNewRoute =
@@ -80,100 +115,132 @@ const AuthenticatedDashboardsDashboardIdRoute =
     path: '/dashboards/$dashboardId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedChatSessionIdRoute =
+  AuthenticatedChatSessionIdRouteImport.update({
+    id: '/$sessionId',
+    path: '/$sessionId',
+    getParentRoute: () => AuthenticatedChatRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/calendar': typeof AuthenticatedCalendarRoute
+  '/chat': typeof AuthenticatedChatRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/chat/$sessionId': typeof AuthenticatedChatSessionIdRoute
   '/dashboards/$dashboardId': typeof AuthenticatedDashboardsDashboardIdRoute
   '/dashboards/new': typeof AuthenticatedDashboardsNewRoute
+  '/datasources/$datasourceId': typeof AuthenticatedDatasourcesDatasourceIdRoute
+  '/datasources/new': typeof AuthenticatedDatasourcesNewRoute
+  '/datasources/oauth-callback': typeof AuthenticatedDatasourcesOauthCallbackRoute
   '/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
+  '/chat/': typeof AuthenticatedChatIndexRoute
   '/dashboards/': typeof AuthenticatedDashboardsIndexRoute
+  '/datasources/': typeof AuthenticatedDatasourcesIndexRoute
   '/recruitment/': typeof AuthenticatedRecruitmentIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/chat/$sessionId': typeof AuthenticatedChatSessionIdRoute
   '/dashboards/$dashboardId': typeof AuthenticatedDashboardsDashboardIdRoute
   '/dashboards/new': typeof AuthenticatedDashboardsNewRoute
+  '/datasources/$datasourceId': typeof AuthenticatedDatasourcesDatasourceIdRoute
+  '/datasources/new': typeof AuthenticatedDatasourcesNewRoute
+  '/datasources/oauth-callback': typeof AuthenticatedDatasourcesOauthCallbackRoute
   '/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
+  '/chat': typeof AuthenticatedChatIndexRoute
   '/dashboards': typeof AuthenticatedDashboardsIndexRoute
+  '/datasources': typeof AuthenticatedDatasourcesIndexRoute
   '/recruitment': typeof AuthenticatedRecruitmentIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/chat/$sessionId': typeof AuthenticatedChatSessionIdRoute
   '/_authenticated/dashboards/$dashboardId': typeof AuthenticatedDashboardsDashboardIdRoute
   '/_authenticated/dashboards/new': typeof AuthenticatedDashboardsNewRoute
+  '/_authenticated/datasources/$datasourceId': typeof AuthenticatedDatasourcesDatasourceIdRoute
+  '/_authenticated/datasources/new': typeof AuthenticatedDatasourcesNewRoute
+  '/_authenticated/datasources/oauth-callback': typeof AuthenticatedDatasourcesOauthCallbackRoute
   '/_authenticated/recruitment/$jobId': typeof AuthenticatedRecruitmentJobIdRoute
+  '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
   '/_authenticated/dashboards/': typeof AuthenticatedDashboardsIndexRoute
+  '/_authenticated/datasources/': typeof AuthenticatedDatasourcesIndexRoute
   '/_authenticated/recruitment/': typeof AuthenticatedRecruitmentIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
     | '/calendar'
+    | '/chat'
     | '/expenses'
     | '/settings'
+    | '/chat/$sessionId'
     | '/dashboards/$dashboardId'
     | '/dashboards/new'
+    | '/datasources/$datasourceId'
+    | '/datasources/new'
+    | '/datasources/oauth-callback'
     | '/recruitment/$jobId'
+    | '/chat/'
     | '/dashboards/'
+    | '/datasources/'
     | '/recruitment/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
     | '/calendar'
     | '/expenses'
     | '/settings'
+    | '/chat/$sessionId'
     | '/dashboards/$dashboardId'
     | '/dashboards/new'
+    | '/datasources/$datasourceId'
+    | '/datasources/new'
+    | '/datasources/oauth-callback'
     | '/recruitment/$jobId'
+    | '/chat'
     | '/dashboards'
+    | '/datasources'
     | '/recruitment'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
-    | '/auth'
     | '/_authenticated/calendar'
+    | '/_authenticated/chat'
     | '/_authenticated/expenses'
     | '/_authenticated/settings'
+    | '/_authenticated/chat/$sessionId'
     | '/_authenticated/dashboards/$dashboardId'
     | '/_authenticated/dashboards/new'
+    | '/_authenticated/datasources/$datasourceId'
+    | '/_authenticated/datasources/new'
+    | '/_authenticated/datasources/oauth-callback'
     | '/_authenticated/recruitment/$jobId'
+    | '/_authenticated/chat/'
     | '/_authenticated/dashboards/'
+    | '/_authenticated/datasources/'
     | '/_authenticated/recruitment/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -202,6 +269,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExpensesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/chat': {
+      id: '/_authenticated/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/calendar': {
       id: '/_authenticated/calendar'
       path: '/calendar'
@@ -216,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRecruitmentIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/datasources/': {
+      id: '/_authenticated/datasources/'
+      path: '/datasources'
+      fullPath: '/datasources/'
+      preLoaderRoute: typeof AuthenticatedDatasourcesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboards/': {
       id: '/_authenticated/dashboards/'
       path: '/dashboards'
@@ -223,11 +304,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/chat/': {
+      id: '/_authenticated/chat/'
+      path: '/'
+      fullPath: '/chat/'
+      preLoaderRoute: typeof AuthenticatedChatIndexRouteImport
+      parentRoute: typeof AuthenticatedChatRoute
+    }
     '/_authenticated/recruitment/$jobId': {
       id: '/_authenticated/recruitment/$jobId'
       path: '/recruitment/$jobId'
       fullPath: '/recruitment/$jobId'
       preLoaderRoute: typeof AuthenticatedRecruitmentJobIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/datasources/oauth-callback': {
+      id: '/_authenticated/datasources/oauth-callback'
+      path: '/datasources/oauth-callback'
+      fullPath: '/datasources/oauth-callback'
+      preLoaderRoute: typeof AuthenticatedDatasourcesOauthCallbackRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/datasources/new': {
+      id: '/_authenticated/datasources/new'
+      path: '/datasources/new'
+      fullPath: '/datasources/new'
+      preLoaderRoute: typeof AuthenticatedDatasourcesNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/datasources/$datasourceId': {
+      id: '/_authenticated/datasources/$datasourceId'
+      path: '/datasources/$datasourceId'
+      fullPath: '/datasources/$datasourceId'
+      preLoaderRoute: typeof AuthenticatedDatasourcesDatasourceIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboards/new': {
@@ -244,29 +353,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardsDashboardIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/chat/$sessionId': {
+      id: '/_authenticated/chat/$sessionId'
+      path: '/$sessionId'
+      fullPath: '/chat/$sessionId'
+      preLoaderRoute: typeof AuthenticatedChatSessionIdRouteImport
+      parentRoute: typeof AuthenticatedChatRoute
+    }
   }
 }
 
+interface AuthenticatedChatRouteChildren {
+  AuthenticatedChatSessionIdRoute: typeof AuthenticatedChatSessionIdRoute
+  AuthenticatedChatIndexRoute: typeof AuthenticatedChatIndexRoute
+}
+
+const AuthenticatedChatRouteChildren: AuthenticatedChatRouteChildren = {
+  AuthenticatedChatSessionIdRoute: AuthenticatedChatSessionIdRoute,
+  AuthenticatedChatIndexRoute: AuthenticatedChatIndexRoute,
+}
+
+const AuthenticatedChatRouteWithChildren =
+  AuthenticatedChatRoute._addFileChildren(AuthenticatedChatRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
+  AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedDashboardsDashboardIdRoute: typeof AuthenticatedDashboardsDashboardIdRoute
   AuthenticatedDashboardsNewRoute: typeof AuthenticatedDashboardsNewRoute
+  AuthenticatedDatasourcesDatasourceIdRoute: typeof AuthenticatedDatasourcesDatasourceIdRoute
+  AuthenticatedDatasourcesNewRoute: typeof AuthenticatedDatasourcesNewRoute
+  AuthenticatedDatasourcesOauthCallbackRoute: typeof AuthenticatedDatasourcesOauthCallbackRoute
   AuthenticatedRecruitmentJobIdRoute: typeof AuthenticatedRecruitmentJobIdRoute
   AuthenticatedDashboardsIndexRoute: typeof AuthenticatedDashboardsIndexRoute
+  AuthenticatedDatasourcesIndexRoute: typeof AuthenticatedDatasourcesIndexRoute
   AuthenticatedRecruitmentIndexRoute: typeof AuthenticatedRecruitmentIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
+  AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedDashboardsDashboardIdRoute:
     AuthenticatedDashboardsDashboardIdRoute,
   AuthenticatedDashboardsNewRoute: AuthenticatedDashboardsNewRoute,
+  AuthenticatedDatasourcesDatasourceIdRoute:
+    AuthenticatedDatasourcesDatasourceIdRoute,
+  AuthenticatedDatasourcesNewRoute: AuthenticatedDatasourcesNewRoute,
+  AuthenticatedDatasourcesOauthCallbackRoute:
+    AuthenticatedDatasourcesOauthCallbackRoute,
   AuthenticatedRecruitmentJobIdRoute: AuthenticatedRecruitmentJobIdRoute,
   AuthenticatedDashboardsIndexRoute: AuthenticatedDashboardsIndexRoute,
+  AuthenticatedDatasourcesIndexRoute: AuthenticatedDatasourcesIndexRoute,
   AuthenticatedRecruitmentIndexRoute: AuthenticatedRecruitmentIndexRoute,
 }
 
@@ -276,7 +417,6 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

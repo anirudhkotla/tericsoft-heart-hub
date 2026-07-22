@@ -15,8 +15,10 @@ export interface Widget {
   id: string;
   type: WidgetType;
   title: string;
-  source: "dataset" | "inline";
+  source: "dataset" | "inline" | "external"; // "external" only exists transiently during generation; generateDashboard() resolves it to "inline" with real computed data before returning
   dataset?: DatasetId;
+  datasourceId?: string;        // external datasource UUID (when data comes from MCP)
+  datasourceTable?: string;     // key into the externalTables map passed to generateDashboard, e.g. "T1"
   metric?: "count" | "sum";
   valueField?: string;
   groupBy?: string;

@@ -1,1 +1,9 @@
 project_id = "azetrpxfpanteqgftsho"
+
+# oauth-connect's /callback route is hit directly by the OAuth provider's
+# browser redirect, which carries no Supabase JWT — the function verifies the
+# caller itself (via the `state` row) for /start, and /callback is keyed by
+# an unguessable one-time state token, so the platform-level JWT gate must be
+# off or every OAuth connect would 401 before reaching our code.
+[functions.oauth-connect]
+verify_jwt = false

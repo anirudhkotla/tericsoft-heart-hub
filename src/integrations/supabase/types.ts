@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_sessions: {
+        Row: {
+          cache_cleared_at: string
+          created_at: string
+          enabled_datasource_ids: string[]
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cache_cleared_at?: string
+          created_at?: string
+          enabled_datasource_ids?: string[]
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          cache_cleared_at?: string
+          created_at?: string
+          enabled_datasource_ids?: string[]
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_messages: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+          step_type: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+          step_type?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+          step_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "agent_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           all_day: boolean
@@ -139,6 +207,142 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      datasources: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          provider: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          name: string
+          provider?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          provider?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      datasource_secrets: {
+        Row: {
+          created_at: string
+          datasource_id: string
+          secret: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          datasource_id: string
+          secret?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          datasource_id?: string
+          secret?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datasource_secrets_datasource_id_fkey"
+            columns: ["datasource_id"]
+            isOneToOne: true
+            referencedRelation: "datasources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      datasource_tool_cache: {
+        Row: {
+          cached_at: string
+          datasource_id: string
+          tools: Json
+        }
+        Insert: {
+          cached_at?: string
+          datasource_id: string
+          tools?: Json
+        }
+        Update: {
+          cached_at?: string
+          datasource_id?: string
+          tools?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datasource_tool_cache_datasource_id_fkey"
+            columns: ["datasource_id"]
+            isOneToOne: true
+            referencedRelation: "datasources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_pending: {
+        Row: {
+          client_id: string
+          client_secret: string | null
+          code_verifier: string
+          created_at: string
+          ds_name: string
+          provider: string
+          redirect_uri: string
+          resource: string | null
+          server_url: string
+          state: string
+          token_endpoint: string
+          token_endpoint_auth_method: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          client_secret?: string | null
+          code_verifier: string
+          created_at?: string
+          ds_name: string
+          provider: string
+          redirect_uri: string
+          resource?: string | null
+          server_url: string
+          state: string
+          token_endpoint: string
+          token_endpoint_auth_method?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          client_secret?: string | null
+          code_verifier?: string
+          created_at?: string
+          ds_name?: string
+          provider?: string
+          redirect_uri?: string
+          resource?: string | null
+          server_url?: string
+          state?: string
+          token_endpoint?: string
+          token_endpoint_auth_method?: string
+          user_id?: string
         }
         Relationships: []
       }

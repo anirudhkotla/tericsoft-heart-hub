@@ -1,10 +1,12 @@
 import type { Tables } from "@/integrations/supabase/types";
 
+export type { Tables };
 export type JobRequest = Tables<"job_requests">;
 export type Candidate = Tables<"candidates">;
 export type Expense = Tables<"expenses">;
 export type CalendarEvent = Tables<"calendar_events">;
 export type Dashboard = Tables<"dashboards">;
+export type Datasource = Tables<"datasources">;
 
 export const PIPELINE_STAGES = [
   { id: "applied", label: "Applied", tone: "brand" },

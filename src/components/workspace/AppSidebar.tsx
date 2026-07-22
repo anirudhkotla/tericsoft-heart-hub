@@ -1,5 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Users, Receipt, LayoutDashboard, CalendarDays, Settings } from "lucide-react";
+import {
+  Users,
+  Receipt,
+  LayoutDashboard,
+  CalendarDays,
+  Cable,
+  Settings,
+  MessagesSquare,
+} from "lucide-react";
 import logoMark from "@/assets/tericsoft-mark.png";
 import {
   Sidebar,
@@ -21,6 +29,10 @@ const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarDays },
 ];
 
+const ai = [{ title: "Agent Chat", url: "/chat", icon: MessagesSquare }];
+
+const integrations = [{ title: "Datasources", url: "/datasources", icon: Cable }];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -31,13 +43,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-3">
-          <img
-            src={logoMark}
-            alt="Tericsoft"
-            width={32}
-            height={32}
-            className="h-8 w-8 shrink-0"
-          />
+          <img src={logoMark} alt="Tericsoft" width={32} height={32} className="h-8 w-8 shrink-0" />
           {!collapsed && (
             <div className="leading-tight">
               <p className="text-base font-semibold tracking-tight text-sidebar-foreground">
@@ -54,6 +60,40 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <Link to={item.url} className="flex items-center gap-3">
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>AI</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ai.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <Link to={item.url} className="flex items-center gap-3">
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Integrations</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {integrations.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <Link to={item.url} className="flex items-center gap-3">
