@@ -34,6 +34,32 @@ interface JsonRpcResponse {
 
 const MCP_PROTOCOL_VERSION = "2025-11-25";
 
+// The MCP Streamable HTTP transport allows a server to answer a POST with
+// text/event-stream instead of plain JSON (Airtable's MCP server does this)
+// — each SSE event frames one JSON-RPC message as one or more `data:` lines.
+// Find the event whose id matches this request (skipping any notifications
+// the server interleaves ahead of the actual response).
+function parseSseJsonRpc(raw: string, expectedId: number): JsonRpcResponse {
+  const events = raw.split(/\r?\n\r?\n/);
+  let lastParsed: JsonRpcResponse | undefined;
+  for (const evt of events) {
+    const dataLines = evt
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).trimStart());
+    if (dataLines.length === 0) continue;
+    try {
+      const parsed = JSON.parse(dataLines.join("\n")) as JsonRpcResponse;
+      if (parsed.id === expectedId) return parsed;
+      lastParsed = parsed;
+    } catch {
+      /* not a JSON-RPC event (e.g. a bare progress ping) — skip it */
+    }
+  }
+  if (lastParsed) return lastParsed;
+  throw new Error(`Could not parse SSE response from MCP server: ${raw.slice(0, 200)}`);
+}
+
 export class McpClient {
   private reqId = 1;
   private sessionId: string | null = null;
@@ -62,7 +88,13 @@ export class McpClient {
     const res = await fetch(this.url, { method: "POST", headers: this.reqHeaders, body });
     const sid = res.headers.get("Mcp-Session-Id");
     if (sid) this.sessionId = sid;
-    const json = (await res.json()) as JsonRpcResponse;
+
+    const contentType = res.headers.get("content-type") ?? "";
+    const raw = await res.text();
+    const json = contentType.includes("text/event-stream")
+      ? parseSseJsonRpc(raw, id)
+      : (JSON.parse(raw) as JsonRpcResponse);
+
     if (json.error) {
       const code = json.error.code ?? -1;
       const msg = json.error.message ?? JSON.stringify(json.error);

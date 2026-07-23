@@ -234,9 +234,18 @@ async function handleCallback(req: Request): Promise<Response> {
     .single();
   if (dsError) return appRedirect(req, { error: dsError.message });
 
+  // Access tokens are typically short-lived (Airtable's expire in ~1 hour) —
+  // store what's needed to silently refresh later (mcp-proxy/agent-chat do
+  // this automatically on an auth failure) rather than the token alone.
   await admin.from("datasource_secrets").insert({
     datasource_id: dsRow.id,
-    secret: { authToken: tokenJson.access_token },
+    secret: {
+      authToken: tokenJson.access_token,
+      refreshToken: tokenJson.refresh_token ?? null,
+      tokenEndpoint: pending.token_endpoint,
+      clientId: pending.client_id,
+      clientSecret: pending.client_secret ?? null,
+    },
   });
 
   return appRedirect(req, { ds: dsRow.id, name: pending.ds_name });
